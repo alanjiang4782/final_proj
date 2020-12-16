@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title> Home Page </title>
+</head>
+
+<body>
+    <h1>
+        {{result[1]}}
+    </h1>  
+    {% if result[10] != None %}
+    <img src={{result[10]}} alt="Poster">
+    {% endif %}
+    <h2>
+        Details
+    </h2>
+    <p>
+        Releasing Date: {{result[6]}} <br/><br/>
+        Score: {{result[7]}} <br/><br/>
+        Type: {{result[8]}} <br/><br/>
+        Storyline: {{result[9]}}<br/><br/>
+        Director: {{result[2]}} <br/><br/>
+        Starring: {{result[3]}}, {{result[4]}}, {{result[5]}} <br/><br/>
+    </p>
+    <form action="/cast_info", method="POST">
+    <p>
+        Which cast are you interested in? <input name="name" type="text"/>
+        <input type="submit" value="go!"/><br/>
+    </p>
+    </form>
+    <p>
+        return <a href='/'>home</a>
+    </p>
+</body>

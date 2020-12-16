@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title> Home Page </title>
+</head>
+
+<body>
+    <h1>
+        Welcome to the homepage of SuperMovie!!!
+    </h1>  
+    <form action="/movie_list", method="POST">
+        <p> 
+            What type of movie do you wish to see?
+            <select name="classification">
+                <option value="All"> All </option> 
+                <option value="Action"> Action </option>
+                <option value="Adventure"> Adventure </option>
+                <option value="Animation"> Animation </option>
+                <option value="Biography"> Biography </option>
+                <option value="Comedy"> Comedy </option>
+                <option value="Crime"> Crime </option>
+                <option value="Documentary"> Documentary</option>
+                <option value="Drama"> Drama </option>
+                <option value="History"> History </option>
+                <option value="Horror"> Horror</option>
+                <option value="Romance"> Romance </option>
+                <option value="Sci-Fi"> Sci-Fi </option>
+                <option value="Thriller"> Thriller </option> 
+            </select><br/>
+            Sort all these upcoming movies in the US by:<br>
+            <input type="radio" name="sort" value="date">date<br/>
+            <input type="radio" name="sort" value="score">score<br/>
+        </p>
+        <input type="submit" value = "go!"/>
+    </form>
+    
+
+</body>
+
+
+
+</html>

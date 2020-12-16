@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 import requests
 import json
 import sqlite3
+import re
 
 url = "https://www.imdb.com/calendar/?ref_=nv_mv_cal"
 base_url = "https://www.imdb.com"
@@ -27,10 +28,11 @@ create_movies = '''
         "star1"                 TEXT,
         "star2"                 TEXT,
         "star3"                 TEXT,
-        "releasing date"        TEXT,
+        "releasing_date"        TEXT,
         "score"                 TEXT,
         "classification"        TEXT,
-        "description"           TEXT
+        "description"           TEXT,
+        "poster_url"            TEXT
     );
 '''
 
@@ -40,8 +42,8 @@ drop_movies = '''
 
 insert_movies = '''
     INSERT INTO movies 
-    ("name","director","star1","star2","star3","releasing date","score","classification","description")
-    VALUES (?,?,?,?,?,?,?,?,?)
+    ("name","director","star1","star2","star3","releasing_date","score","classification","description","poster_url")
+    VALUES (?,?,?,?,?,?,?,?,?,?)
 '''
 
 drop_casts = '''
@@ -56,19 +58,24 @@ create_casts = '''
         "bio"                   TEXT,
         "film1"                 TEXT,
         "score1"                TEXT,
+        "date1"                 TEXT,
         "film2"                 TEXT,
         "score2"                TEXT,
+        "date2"                 TEXT,
         "film3"                 TEXT,
         "score3"                TEXT,
+        "date3"                 TEXT,
         "film4"                 TEXT,
-        "score4"                TEXT
+        "score4"                TEXT,
+        "date4"                 TEXT,
+        "photo"                 TEXT
     );
 '''
 
 insert_casts = '''
     INSERT INTO casts 
-    ("name","position","bio","film1","score1","film2","score2","film3","score3","film4","score4")
-    VALUES (?,?,?,?,?,?,?,?,?,?,?)  
+    ("name","position","bio","film1","score1","date1","film2","score2","date2","film3","score3","date3","film4","score4","date4","photo")
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)  
 '''
 
 class Movies:
@@ -89,13 +96,13 @@ class Movies:
     releasing_date: str
         releasing date of the movie
     score: str
-        score of the movie in the format of score/10
+        score of the movie
     classification: str
         type of the movie, eg: action, drama, documentary etc.
     description: str
         story line of the movie
     '''
-    def __init__(self, name, director, director_url, stars, stars_url_dict, releasing_date, score, classification, description):
+    def __init__(self, name, director, director_url, stars, stars_url_dict, releasing_date, score, classification, description, poster_url):
         self.name = name
         self.director = director
         self.director_url = director_url
@@ -105,6 +112,7 @@ class Movies:
         self.score = score
         self.classification = classification
         self.description = description
+        self.poster_url = poster_url
 
 
     def info(self):
@@ -147,12 +155,13 @@ class Cast:
         in the form of {'film_name': score of the film}
     '''
 
-    def __init__(self,position,name,bio,films,score):
+    def __init__(self,position,name,bio,films,score,photo):
         self.position = position
         self.name = name
         self.bio = bio
         self.films = films
         self.score = score
+        self.photo = photo
 
     def info (self):
         '''Displays the information of the instance
@@ -233,6 +242,7 @@ def get_movie_instance(movie_url):
         score = movie_dict[movie_url]['score']
         classification = movie_dict[movie_url]['classification']
         description = movie_dict[movie_url]['description']
+        poster_url = movie_dict[movie_url]['poster_url']
 
     else:
         print ("Fetching")
@@ -248,15 +258,15 @@ def get_movie_instance(movie_url):
             index = name.find('(')
             name = name[0:index-1]
             classification = title_wrapper.find('div', class_='subtext').find_all('a')[0].text.strip()
-            releasing_date = title_wrapper.find('div', class_='subtext').find_all('a')[1].text.strip()
+            releasing_date = title_wrapper.find('div', class_='subtext').find_all('a')[-1].text.strip()
             index = releasing_date.find('(')
             releasing_date = releasing_date[0:index-1]
         
         score_wrapper = soup.find('div', class_='ratingValue')
         if score_wrapper is None:
-            score = None
+            score = 0
         else:
-            score = score_wrapper.text.strip()
+            score = score_wrapper.text.strip()[:-3]
         
         director_wrapper = soup.find_all('div', class_='credit_summary_item')[0].find('a')
         if director_wrapper is None:
@@ -285,6 +295,13 @@ def get_movie_instance(movie_url):
         else:
             description = description_wrapper.text.strip()
         
+        poster_wrapper = soup.find('div', class_='poster')
+        if poster_wrapper is None:
+            poster_url = None
+        else:
+            poster_url = poster_wrapper.find('img')['src']
+        
+        
         movie_dict[movie_url] = {}
         movie_dict[movie_url]['name'] = name
         movie_dict[movie_url]['director'] = director
@@ -295,9 +312,10 @@ def get_movie_instance(movie_url):
         movie_dict[movie_url]['score'] = score
         movie_dict[movie_url]['classification'] = classification
         movie_dict[movie_url]['description'] = description
+        movie_dict[movie_url]['poster_url'] = poster_url
         save_cache(movie_dict, CACHE_MOVIE_FILENAME)
         
-    movie_instance = Movies(name, director, director_url, stars, stars_url_dict, releasing_date, score, classification, description)
+    movie_instance = Movies(name, director, director_url, stars, stars_url_dict, releasing_date, score, classification, description, poster_url)
 
     return movie_instance
     
@@ -322,6 +340,7 @@ def get_cast_instance(position, cast_url):
         name = cast_dict[cast_url]['name']
         bio = cast_dict[cast_url]['bio']
         films = cast_dict[cast_url]['films']
+        photo = cast_dict[cast_url]['photo']
 
     else:
         print ("Fetching")
@@ -341,6 +360,18 @@ def get_cast_instance(position, cast_url):
             bio = None
         else:
             bio = bio_wrapper.text.strip()[0:-15]
+        if name_bio_wrapper is None:
+            photo = None
+        else:
+            photo_1 = name_bio_wrapper.find('div', class_='poster-hero-container')
+            if photo_1 is None:
+                photo = None
+            else:
+                photo_2 = photo_1.find('div',class_='image')
+                if photo_2 is None:
+                    photo = None
+                else:
+                    photo = photo_2.find('img')['src']
 
         film_wrapper = soup.find_all('div', class_ = 'knownfor-title-role')
         if film_wrapper is None:
@@ -354,13 +385,14 @@ def get_cast_instance(position, cast_url):
         cast_dict[cast_url] = {}
         cast_dict[cast_url]['name'] = name
         cast_dict[cast_url]['bio'] = bio
-        cast_dict[cast_url]['films'] =  films
+        cast_dict[cast_url]['films'] = films
+        cast_dict[cast_url]['photo'] = photo
         save_cache(cast_dict, CACHE_CAST_FILENAME)
     
     score = {} 
 
         
-    cast_instance = Cast(position, name, bio, films, score)
+    cast_instance = Cast(position, name, bio, films, score, photo)
 
     return cast_instance
 
@@ -391,12 +423,25 @@ def get_score_attribute(cast_instance):
             soup = BeautifulSoup(response.text, 'html.parser')
             score_wrapper = soup.find('div', class_='ratingValue')
             if score_wrapper is None:
-                score = None
+                score = 0
             else:
-                score = score_wrapper.text.strip()
-            scores[movie_name] = score
-            movie_url_dict[movie_url_input_dict[movie_name]] = score
-    
+                score = score_wrapper.text.strip()[0:-3]
+            title_wrapper = soup.find('div', class_='title_wrapper')
+            if title_wrapper is None:
+                releasing_date = None
+            else:
+                releasing_date = title_wrapper.find('div', class_='subtext').find_all('a')[-1].text.strip()
+                index = releasing_date.find('(')
+                releasing_date = releasing_date[0:index-1]
+                
+                if (re.fullmatch('\d{2}\s{1}[a-zA-Z]+\s{1}\d{4}',releasing_date)) is None:
+                    releasing_date = None
+   
+            scores[movie_name] = []
+            scores[movie_name] = [score,releasing_date]
+            movie_url_dict[movie_url_input_dict[movie_name]] = []
+            movie_url_dict[movie_url_input_dict[movie_name]] = [score,releasing_date]
+
     cast_instance.score = scores
     save_cache(movie_url_dict, CACHE_CAST_MOVIE_URL_FILENAME)
 
@@ -474,6 +519,7 @@ def scrape_info ():
             cast_star = get_cast_instance('star',star_url)
             cast_star = get_score_attribute(cast_star)
             cast_list.append(cast_star)
+        
 
     return movie_list, cast_list
 
@@ -514,6 +560,7 @@ def build_movies_table(movie_list):
         value_list.append(movie.score)
         value_list.append(movie.classification)
         value_list.append(movie.description)
+        value_list.append(movie.poster_url)
         cur.execute(insert_movies, value_list)
     conn.commit()
 
@@ -541,21 +588,22 @@ def build_casts_table(cast_list):
         key_list = cast.score.keys()
         for key in key_list:
             value_list.append(key)
-            value_list.append(cast.score[key]) 
+            value_list.append(cast.score[key][0]) 
+            value_list.append(cast.score[key][1]) 
         
         if num_of_films == 0:
-            for i in range(8):
+            for i in range(12):
                 value_list.append('-')
         elif num_of_films == 1:
-            for i in range(6):
+            for i in range(9):
                 value_list.append('-')
         elif num_of_films == 2:             
-            for i in range (4):
+            for i in range (6):
                 value_list.append('-')
         elif num_of_films == 3:
-            for i in range(2):
+            for i in range(3):
                 value_list.append('-')
-
+        value_list.append(cast.photo)
         cur.execute(insert_casts, value_list)
 
     conn.commit()

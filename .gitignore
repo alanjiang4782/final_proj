@@ -1,0 +1,8 @@
+*
+!.gitignore
+!final_proj.py
+!templates/
+!templates/**
+!supermovie_flask.py
+!README
+!super_movie.sqlite

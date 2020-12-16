@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title> Home Page </title>
+    <style>
+        table, th, td {
+          border: 1px solid black;
+        }
+        th, td {
+            padding: 15px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>
+        {{result[1]}}
+    </h1>  
+    {% if result[16] != None %}
+    <img src={{result[16]}} alt="photo">
+    {% endif %}
+    <p>
+        Position: {{result[2]}} <br/><br/>
+    </p>
+    <h2>
+        Biography of {{result[1]}}:
+    </h2>
+    <p>
+        {{result[3]}}
+    </p>
+    <h2>
+        Known For:
+    </h2>
+    <p>
+        {% if result[4] != '-' and result[4] != None %}
+            {{result[4]}}: receives score of {{result[5]}}  <br/><br/>
+        {% endif %}
+        {% if result[7] != '-' and result[7] != None %}
+            {{result[7]}}: receives score of {{result[8]}}  <br/><br/>
+        {% endif %}
+        {% if result[10] != '-' and result[10] != None %}
+            {{result[10]}}: receives score of {{result[11]}}  <br/><br/>
+        {% endif %}
+        {% if result[13] != '-' and result[13] != None %}
+            {{result[13]}}: receives score of {{result[14]}}  <br/><br/>
+        {% endif %}
+    </p>
+    <h2>
+    Trend of Performance:
+    </h2>
+    {{plot_div | safe}}
+
+    <p>
+        return <a href='/'>home</a>
+    </p>
+</body>
